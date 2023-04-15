@@ -5,6 +5,7 @@ const { Configuration, OpenAIApi } = require('openai')
 const { Client, Events, GatewayIntentBits } = require('discord.js')
 const { joinVoiceChannel } = require('@discordjs/voice')
 const recordAudio = require('./recordAudio.js')
+const isSoundRecorded = require('./analyzeAudio.js')
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -24,10 +25,14 @@ const userSpeakHandler = async (voiceChannel, connection, notableUserId) => {
     try {
       const fileName = await recordAudio(receiver, speakingUserId)
       if (!fileName) return
+      if (! await isSoundRecorded(fileName)) {
+        fs.unlinkSync(fileName)
+        return
+      }
       const transcription = await openai.createTranscription(fs.createReadStream(fileName), 'whisper-1')
       const text = transcription.data.text
       fs.unlinkSync(fileName)
-      if (text && text.trim().match(/^[a-zA-Z0-9\-.,;:!? ]+$/)) {
+      if (text && text.trim().match(/^[a-zA-Z0-9\-.,;:!?'" ]+$/)) {
         console.log('Skipped: ', text)
       } else if (!text || text.trim() === '') {
         console.log('Skipped: ', text)
