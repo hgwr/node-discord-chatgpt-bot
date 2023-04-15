@@ -1,0 +1,5 @@
+export DISCORD_BOT_TOKEN=
+export STENOGRAPHER_BOT_TOKEN=
+export OPENAI_API_KEY=
+export GOOGLE_APPLICATION_CREDENTIALS='/path/to/credentials.json'
+export ELENARIA_USER_ID='<@NNNN>'
