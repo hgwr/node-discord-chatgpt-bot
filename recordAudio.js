@@ -19,7 +19,11 @@ class OpusDecodingStream extends Transform {
   }
 }
 
+let recordingUsers = {}
+
 const recordAudio = async (receiver, userId) => {
+  if (recordingUsers[userId]) return
+  recordingUsers[userId] = true
   const opusStream = receiver.subscribe(userId, {
     end: {
       behavior: EndBehaviorType.AfterSilence,
@@ -46,10 +50,13 @@ const recordAudio = async (receiver, userId) => {
   try {
     await pipeline(opusStream, opusDecoder, ffmpeg, out)
     console.log(`✅ Recorded ${filename}`)
+    opusStream.destroy()
     return filename
   } catch (err) {
     console.log(err)
     console.warn(`❌ Error recording file ${filename} - ${err.message}`)
+  } finally {
+    recordingUsers[userId] = false
   }
 }
 
