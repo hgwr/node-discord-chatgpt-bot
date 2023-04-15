@@ -17,21 +17,26 @@ const client = new Client({
 
 client.on(Events.ClientReady, () => console.log('Ready!'))
 
-let recordedUsers = {}
-
 const userSpeakHandler = async (voiceChannel, connection, notableUserId) => {
   const receiver = connection.receiver
-  if (recordedUsers[notableUserId]) return
-  recordedUsers[notableUserId] = true
   receiver.speaking.on('start', async (speakingUserId) => {
-    if (speakingUserId == notableUserId) {
-      try {
-        const fileName = await recordAudio(receiver, speakingUserId)
-        const transcription = await openai.createTranscription(fs.createReadStream(fileName), 'whisper-1')
-        voiceChannel.send(`${ELENARIA_USER_ID} ${transcription.data.text}`)
-      } catch (error) {
-        console.log(error)
+    if (speakingUserId != notableUserId) return
+    try {
+      const fileName = await recordAudio(receiver, speakingUserId)
+      if (!fileName) return
+      const transcription = await openai.createTranscription(fs.createReadStream(fileName), 'whisper-1')
+      const text = transcription.data.text
+      fs.unlinkSync(fileName)
+      if (text && text.trim().match(/^[a-zA-Z0-9\-.,;:!? ]+$/)) {
+        console.log('Skipped: ', text)
+      } else if (!text || text.trim() === '') {
+        console.log('Skipped: ', text)
+      } else {
+        console.log('Text: ', text)
+        voiceChannel.send(`${ELENARIA_USER_ID} ${text}`)
       }
+    } catch (error) {
+      console.log(error)
     }
   })
 }
